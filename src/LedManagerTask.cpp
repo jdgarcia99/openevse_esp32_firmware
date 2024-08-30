@@ -36,6 +36,17 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NEO_PIXEL_LENGTH, NEO_PIXEL_PIN, NEO
 #elif defined(NEO_PIXEL_PIN) && defined(NEO_PIXEL_LENGTH) && defined(ENABLE_WS2812FX)
 #include <WS2812FX.h>
 WS2812FX ws2812fx = WS2812FX(NEO_PIXEL_LENGTH, NEO_PIXEL_PIN, NEO_GRB + NEO_KHZ800);
+
+class LedAnimatorTask : public MicroTasks::Task
+{
+  public:
+    void setup() {
+    }
+    unsigned long loop(MicroTasks::WakeReason reason) {
+      ws2812fx.service();
+      return 40;
+    }
+} animator;
 #endif
 
 #define FADE_STEP         16
@@ -177,16 +188,18 @@ void LedManagerTask::setup()
   //strip.setBrightness(brightness);
   setAllRGB(0, 0, 0);
 #elif defined(NEO_PIXEL_PIN) && defined(NEO_PIXEL_LENGTH) && defined(ENABLE_WS2812FX)
-  DEBUG.printf("Initialising NeoPixels WS2812FX MODE...\n");
+  DBUGF("Initialising NeoPixels WS2812FX MODE...\n");
   ws2812fx.init();
   ws2812fx.setBrightness(brightness);
   ws2812fx.setSpeed(DEFAULT_FX_SPEED);
   ws2812fx.setColor(BLACK);
   ws2812fx.setMode(FX_MODE_STATIC);
   //ws2812fx.setBrightness(this->brightness);
-  DEBUG.printf("Brightness: %d ", this->brightness);
-  DEBUG.printf("Brightness: %d ", brightness);
+  DBUGF("Brightness: %d ", this->brightness);
+  DBUGF("Brightness: %d ", brightness);
+
   ws2812fx.start();
+  MicroTask.startTask(&animator)
 #endif
 
 #if defined(RED_LED) && defined(GREEN_LED) && defined(BLUE_LED)
@@ -274,14 +287,14 @@ unsigned long LedManagerTask::loop(MicroTasks::WakeReason reason)
       DBUGVAR(lcdCol);
       uint32_t col = status_colour_map(lcdCol);
       DBUGVAR(col, HEX);
-      //DEBUG.printf("Color: %x\n", col);
+      //DBUGF("Color: %x\n", col);
       bool isCharging;
       u_int16_t speed;
       speed = 2000 - ((_evse->getChargeCurrent()/_evse->getMaxHardwareCurrent())*1000);
-      DEBUG.printf("Speed: %d ",speed);
-      DEBUG.printf("Amps: %d ", _evse->getAmps());
-      DEBUG.printf("ChargeCurrent: %d ", _evse->getChargeCurrent());
-      DEBUG.printf("MaxHWCurrent: %d ", _evse->getMaxHardwareCurrent());
+      DBUGF("Speed: %d ",speed);
+      DBUGF("Amps: %d ", _evse->getAmps());
+      DBUGF("ChargeCurrent: %d ", _evse->getChargeCurrent());
+      DBUGF("MaxHWCurrent: %d ", _evse->getMaxHardwareCurrent());
       if (this->brightness == 0){
         ws2812fx.setBrightness(255);
       }
@@ -298,29 +311,29 @@ unsigned long LedManagerTask::loop(MicroTasks::WakeReason reason)
           else {
             setAllRGB(col, FX_MODE_STATIC, DEFAULT_FX_SPEED);
           }    
-          //DEBUG.printf("MODO:  LedState_Evse_State\n");
+          //DBUGF("MODE:  LedState_Evse_State\n");
           return MicroTask.Infinate;
 
         case LedState_WiFi_Access_Point_Waiting:
           setEvseAndWifiRGB(col, FX_MODE_BLINK, CONNECTING_FX_SPEED);
-          //DEBUG.printf("MODO: LedState_WiFi_Access_Point_Waiting\n");
+          //DBUGF.printf("MODE: LedState_WiFi_Access_Point_Waiting\n");
           return CONNECTING_FLASH_TIME;
 
         case LedState_WiFi_Access_Point_Connected:
           setEvseAndWifiRGB(col, FX_MODE_FADE, CONNECTED_FX_SPEED);
           flashState = !flashState;
-          //DEBUG.printf("MODO: LedState_WiFi_Access_Point_Connected\n");
+          //DBUGF("MODE: LedState_WiFi_Access_Point_Connected\n");
           return CONNECTED_FLASH_TIME;
 
         case LedState_WiFi_Client_Connecting:
           setEvseAndWifiRGB(col, FX_MODE_FADE, CONNECTING_FX_SPEED);
           flashState = !flashState;
-          //DEBUG.printf("MODO: LedState_WiFi_Client_Connecting\n");
+          //DBUGF("MODE: LedState_WiFi_Client_Connecting\n");
           return CONNECTING_FLASH_TIME;
 
         case LedState_WiFi_Client_Connected:
           setEvseAndWifiRGB(col, FX_MODE_FADE, CONNECTED_FX_SPEED);
-          //DEBUG.printf("MODO: LedState_WiFi_Client_Connected\n");
+          //DBUGF("MODE: LedState_WiFi_Client_Connected\n");
           return MicroTask.Infinate;
 
         default:
@@ -745,11 +758,5 @@ void LedManagerTask::setBrightness(uint8_t brightness)
   MicroTask.wakeTask(this);
 }
 
-#if defined(NEO_PIXEL_PIN) && defined(NEO_PIXEL_LENGTH) && defined(ENABLE_WS2812FX)
-void LedManagerTask::service()
-{
-  ws2812fx.service();
-}
-#endif
 
 LedManagerTask ledManager;
