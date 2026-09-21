@@ -4,8 +4,8 @@
 	branch = master
 [submodule "gui-nightshift"]
 	path = gui-nightshift
-	url = https://github.com/OpenEVSE/openevse-gui-nightshift
-	branch = RePartition
+	url = https://github.com/jdgarcia99/openevse-gui-nightshift
+	branch = X10EVSE-lilygo-t-eth
 [submodule "migrator"]
 	path = migrator
 	url = https://github.com/RAR/openevse-16mb-migrator
